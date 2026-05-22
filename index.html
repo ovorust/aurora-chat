@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
-  <title>ZOE — AI Chat</title>
+  <title>AURORA — AI Chat</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -229,7 +229,7 @@
   <!-- Header -->
   <header class="hdr">
     <div class="hdr-left">
-      <span class="logo">ZOE</span>
+      <span class="logo">AURORA</span>
       <span class="badge" id="badge">sem modelo</span>
     </div>
     <div class="hdr-right">
@@ -312,8 +312,8 @@
   marked.setOptions({ breaks: true, gfm: true });
 
   /* ── State ── */
-  let apiKey  = localStorage.getItem('ZOE_key')   || '';
-  let model   = localStorage.getItem('ZOE_model') || 'openrouter/free';
+  let apiKey  = localStorage.getItem('AURORA_key')   || '';
+  let model   = localStorage.getItem('AURORA_model') || 'openrouter/free';
   let history = [];
   let busy    = false;
 
@@ -400,8 +400,8 @@
     if (!k) { showToast('Insira uma chave de API válida.'); return; }
     apiKey = k;
     model  = modelSel.value;
-    localStorage.setItem('ZOE_key',   apiKey);
-    localStorage.setItem('ZOE_model', model);
+    localStorage.setItem('AURORA_key',   apiKey);
+    localStorage.setItem('AURORA_model', model);
     updateBadge();
     setInputEnabled(true);
     notice.innerHTML = '';
@@ -458,7 +458,7 @@
 
     const lbl = document.createElement('div');
     lbl.className = 'msg-role';
-    lbl.textContent = role === 'user' ? 'você' : 'ZOE';
+    lbl.textContent = role === 'user' ? 'você' : 'AURORA';
 
     const bbl = document.createElement('div');
     bbl.className = 'bubble';
@@ -583,7 +583,7 @@
 
     const asstBubble = appendMsg('assistant', '', true);
     const messages = [
-      { role: 'system', content: 'Você é Zoe, um assistente de IA treinada por Afonso Navarini, inteligente e direta. Responda de forma clara e natural. Se o usuário escrever em português, responda em português. Se em inglês, responda em inglês. Dentre seu vasto conhecimento, é uma ESPECIALISTA em Direito, feita para auxiliar estudantes e profissionais da área do Direito. Sabe de todos os assuntos e explica de forma fácil de entender. Quando for solicitado para fazer um trabalho, deve fazer como um estudante de direito, especialista e com linguagem adequada.' },
+      { role: 'system', content: 'Você é AURORA, um assistente de IA treinada por Afonso Navarini, inteligente e direta. Responda de forma clara e natural. Se o usuário escrever em português, responda em português. Se em inglês, responda em inglês. Dentre seu vasto conhecimento, é uma ESPECIALISTA em Direito, feita para auxiliar estudantes e profissionais da área do Direito. Sabe de todos os assuntos e explica de forma fácil de entender. Quando for solicitado para fazer um trabalho, deve fazer como um estudante de direito, especialista e com linguagem adequada.' },
       ...history
     ];
 
@@ -609,7 +609,7 @@
 
       } catch (err) {
         lastErr = err;
-        console.error(`[ZOE] tentativa ${attempt}:`, err);
+        console.error(`[AURORA] tentativa ${attempt}:`, err);
         // Não faz retry para erros de autenticação ou contexto longo
         if (err.status === 401 || err.status === 400) break;
       }
@@ -621,7 +621,7 @@
       errWrap.className = 'msg assistant';
       const errLbl = document.createElement('div');
       errLbl.className = 'msg-role';
-      errLbl.textContent = 'ZOE';
+      errLbl.textContent = 'AURORA';
       const errBbl = document.createElement('div');
       errBbl.className = 'err-bubble';
       errBbl.innerHTML = `<strong>Falha após ${MAX_RETRIES} tentativas</strong><br>${friendlyError(lastErr.message, lastErr.status)}`;
