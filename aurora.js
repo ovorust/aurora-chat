@@ -2,6 +2,9 @@
 (function () {
   'use strict';
 
+  /* ── Configuração ── */
+  var API_ENDPOINT = 'https://api.npoint.io/da442f6109be89720e58';
+
   /* ── Marked config ── */
   marked.setOptions({ breaks: true, gfm: true });
 
@@ -31,16 +34,22 @@
   /* ═══════════════════════════════════
      FUNÇÕES DE CARREGAMENTO DA BASE DE CONHECIMENTO
   ═══════════════════════════════════ */
-  function loadKnowledgeBase() {
-    try {
-      var raw = localStorage.getItem('aurora_knowledge_base');
-      if (raw) {
-        return JSON.parse(raw);
-      }
-    } catch (e) {
-      console.warn('[AURORA] Erro ao carregar base de conhecimento:', e);
-    }
-    return null;
+  function loadKnowledgeBase(callback) {
+    fetch(API_ENDPOINT, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' }
+    })
+    .then(function (res) {
+      if (!res.ok) throw new Error('Erro ao carregar base de conhecimento');
+      return res.json();
+    })
+    .then(function (data) {
+      if (callback) callback(data);
+    })
+    .catch(function (err) {
+      console.warn('[AURORA] Erro ao carregar base de conhecimento:', err);
+      if (callback) callback(null);
+    });
   }
 
   function buildSystemPromptFromKnowledge(baseKnowledge) {
@@ -98,7 +107,7 @@
   /* ── Estado ── */
   var model               = localStorage.getItem('aurora_model')     || 'openrouter/free';
   var knowledge           = localStorage.getItem('aurora_knowledge') || '';
-  var knowledgeBase       = loadKnowledgeBase();
+  var knowledgeBase       = null;
   var history             = [];
   var busy                = false;
 
@@ -108,6 +117,7 @@
   var sendBtn        = document.getElementById('sendBtn');
   var settingsBtn    = document.getElementById('settingsBtn');
   var clearBtn       = document.getElementById('clearBtn');
+  var manageKbBtn    = document.getElementById('manageKbBtn');
   var overlay        = document.getElementById('overlay');
   var modelSel       = document.getElementById('modelSel');
   var knowledgeInp   = document.getElementById('knowledgeInp');
@@ -126,7 +136,20 @@
     modelSel.value     = model;
     knowledgeInp.value = knowledge;
     updateBadge();
-    updateKnowledgeStatus();
+    
+    // Carregar base de conhecimento do endpoint
+    loadKnowledgeBase(function (data) {
+      if (data) {
+        knowledgeBase = data;
+      }
+      updateKnowledgeStatus();
+    });
+
+    if (manageKbBtn) {
+      manageKbBtn.addEventListener('click', function () {
+        window.location.href = 'knowledge-manager.html';
+      });
+    }
   })();
 
   /* ── Badge do modelo ── */
