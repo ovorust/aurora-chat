@@ -2,11 +2,16 @@
 (function () {
   'use strict';
 
+  /* ── Configuração ── */
+  var API_ENDPOINT = 'https://api.npoint.io/da442f6109be89720e58';
+
   /* ── Estado global ── */
   var knowledgeData = null;
   var currentEditId = null;
   var currentEditType = null;
   var currentEditTab = null;
+  var isLoading = false;
+  var isSaving = false;
 
   /* ── Refs DOM ── */
   var overlay = document.getElementById('overlay');
@@ -35,31 +40,67 @@
   function init() {
     loadKnowledgeData();
     setupEventListeners();
-    renderAllLists();
   }
 
+  init();
+
   /* ═══════════════════════════════════
-     CARREGAR DADOS
+     CARREGAR DADOS DO ENDPOINT
   ═══════════════════════════════════ */
   function loadKnowledgeData() {
-    var raw = localStorage.getItem('aurora_knowledge_base');
-    if (raw) {
-      try {
-        knowledgeData = JSON.parse(raw);
-      } catch (e) {
-        console.error('Erro ao carregar dados:', e);
-        knowledgeData = getDefaultData();
-        saveKnowledgeData();
-      }
-    } else {
+    isLoading = true;
+    showToast('Carregando base de conhecimento...');
+    
+    fetch(API_ENDPOINT, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' }
+    })
+    .then(function (res) {
+      if (!res.ok) throw new Error('Erro ao carregar dados: ' + res.status);
+      return res.json();
+    })
+    .then(function (data) {
+      knowledgeData = data;
+      isLoading = false;
+      renderAllLists();
+      showToast('Base carregada com sucesso! ✓');
+    })
+    .catch(function (err) {
+      console.error('[AURORA KB] Erro ao carregar:', err);
+      isLoading = false;
       knowledgeData = getDefaultData();
-      saveKnowledgeData();
-    }
+      renderAllLists();
+      showToast('Usando base local (endpoint indisponível)');
+    });
   }
 
   function saveKnowledgeData() {
-    localStorage.setItem('aurora_knowledge_base', JSON.stringify(knowledgeData));
-    showToast('Dados salvos com sucesso! ✓');
+    if (isSaving) return;
+    isSaving = true;
+    saveItemBtn.disabled = true;
+
+    knowledgeData.metadata.last_updated = new Date().toISOString();
+
+    fetch(API_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(knowledgeData)
+    })
+    .then(function (res) {
+      if (!res.ok) throw new Error('Erro ao salvar: ' + res.status);
+      return res.json();
+    })
+    .then(function () {
+      isSaving = false;
+      saveItemBtn.disabled = false;
+      showToast('Dados salvos no servidor! ✓');
+    })
+    .catch(function (err) {
+      console.error('[AURORA KB] Erro ao salvar:', err);
+      isSaving = false;
+      saveItemBtn.disabled = false;
+      showToast('Erro ao salvar. Tente novamente.');
+    });
   }
 
   function getDefaultData() {
@@ -146,7 +187,7 @@
     });
 
     addItemBtn.addEventListener('click', openAddModal);
-    backBtn.addEventListener('click', function () { window.history.back(); });
+    backBtn.addEventListener('click', function () { window.location.href = 'index.html'; });
     closeModalBtn.addEventListener('click', closeModal);
     saveItemBtn.addEventListener('click', saveItem);
     overlay.addEventListener('click', function (e) { if (e.target === overlay) closeModal(); });
@@ -322,10 +363,8 @@
     if (!content) { showToast('Conteúdo é obrigatório!'); return; }
 
     if (currentEditId) {
-      // Editar
       updateItem(currentEditId, currentEditType, title, content, category, priority);
     } else {
-      // Criar novo
       addNewItem(title, content, category, priority);
     }
 
@@ -405,7 +444,4 @@
     clearTimeout(_toastTimer);
     _toastTimer = setTimeout(function () { toast.classList.remove('show'); }, 2600);
   }
-
-  /* ── Start ── */
-  init();
 })();
