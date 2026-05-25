@@ -25,14 +25,82 @@
     + 'Seja querida com ela, trate-a com carinho e respeito. Ela merece todo o cuidado e atenção.'
     + 'Seja muito simpática, pois você deve ser a amiga dela, até fofoca ela pode te contar.'
     + 'São fofocas simples, para compartilhar e desabafar, conversinhas para gerar raport.'
-    + 'Quando for algo relacionado a Direito, trabalho, prova, faculdade, responda sério e de acordo. Se for algo pessoal, engraçado, descontraído, responda como uma amiga mesmo, rindo, compartilhando, se divertindo, de forma descontraída. Saiba quando usar cada linguagem.'
+    + 'Quando for algo relacionado a Direito, trabalho, prova, faculdade, responda sério e de acordo. Se for algo pessoal, engraçado, descontraído, responda como uma amiga mesmo, rindo, compartilhando.'
     + '\n--- FIM DO CONTEXTO PESSOAL ---';
 
+  /* ═══════════════════════════════════
+     FUNÇÕES DE CARREGAMENTO DA BASE DE CONHECIMENTO
+  ═══════════════════════════════════ */
+  function loadKnowledgeBase() {
+    try {
+      var raw = localStorage.getItem('aurora_knowledge_base');
+      if (raw) {
+        return JSON.parse(raw);
+      }
+    } catch (e) {
+      console.warn('[AURORA] Erro ao carregar base de conhecimento:', e);
+    }
+    return null;
+  }
+
+  function buildSystemPromptFromKnowledge(baseKnowledge) {
+    if (!baseKnowledge) return SYSTEM;
+
+    var parts = [SYSTEM];
+
+    // Adicionar instruções
+    if (baseKnowledge.instructions && baseKnowledge.instructions.length > 0) {
+      var instructions = baseKnowledge.instructions
+        .map(function (i) { return i.content; })
+        .filter(function (c) { return c && c.trim(); })
+        .join('\n\n');
+      if (instructions) {
+        parts.push('\n--- INSTRUÇÕES ADICIONAIS ---\n' + instructions);
+      }
+    }
+
+    // Adicionar preferências
+    if (baseKnowledge.preferences && baseKnowledge.preferences.length > 0) {
+      var preferences = baseKnowledge.preferences
+        .map(function (p) { return '• ' + p.title + ': ' + p.content; })
+        .join('\n');
+      if (preferences) {
+        parts.push('\n--- PREFERÊNCIAS ---\n' + preferences);
+      }
+    }
+
+    // Adicionar perfil do usuário
+    if (baseKnowledge.student_profile && baseKnowledge.student_profile.length > 0) {
+      var profile = baseKnowledge.student_profile
+        .map(function (p) { return '• ' + p.content; })
+        .join('\n');
+      if (profile) {
+        parts.push('\n--- PERFIL DO USUÁRIO ---\n' + profile);
+      }
+    }
+
+    // Adicionar base de conhecimento
+    if (baseKnowledge.knowledge_base && baseKnowledge.knowledge_base.length > 0) {
+      var knowledge = baseKnowledge.knowledge_base
+        .map(function (kb) {
+          var items = Array.isArray(kb.items) ? kb.items.join(', ') : kb.items;
+          return '• ' + kb.title + ': ' + items;
+        })
+        .join('\n');
+      if (knowledge) {
+        parts.push('\n--- BASE DE CONHECIMENTO ---\n' + knowledge);
+      }
+    }
+
+    return parts.join('');
+  }
+
   /* ── Estado ── */
-  var model     = localStorage.getItem('aurora_model')     || 'openrouter/free';
-  var knowledge = localStorage.getItem('aurora_knowledge') || '';
-  var history   = [];
-  var busy      = false;
+  var model               = localStorage.getItem('aurora_model')     || 'openrouter/free';
+  var knowledge           = localStorage.getItem('aurora_knowledge') || '';
+  var knowledgeBase       = loadKnowledgeBase();
+  var history             = [];
+  var busy                = false;
 
   /* ── Refs DOM ── */
   var msgsEl         = document.getElementById('msgs');
@@ -71,11 +139,31 @@
 
   /* ── Status do contexto ── */
   function updateKnowledgeStatus() {
-    var active = knowledge.trim().length > 0;
+    var hasLegacy = knowledge.trim().length > 0;
+    var hasKB = knowledgeBase && (
+      (knowledgeBase.instructions && knowledgeBase.instructions.length > 0) ||
+      (knowledgeBase.preferences && knowledgeBase.preferences.length > 0) ||
+      (knowledgeBase.student_profile && knowledgeBase.student_profile.length > 0) ||
+      (knowledgeBase.knowledge_base && knowledgeBase.knowledge_base.length > 0)
+    );
+    
+    var active = hasLegacy || hasKB;
     kDot.classList.toggle('on', active);
-    kStatus.textContent = active
-      ? knowledge.trim().length + ' caracteres de contexto adicional ativos.'
-      : 'Nenhuma instrução adicional ativa.';
+    
+    if (hasKB && hasLegacy) {
+      kStatus.textContent = 'Base de conhecimento + ' + knowledge.trim().length + ' caracteres adicionais ativos.';
+    } else if (hasKB) {
+      var kbCount = 0;
+      if (knowledgeBase.instructions) kbCount += knowledgeBase.instructions.length;
+      if (knowledgeBase.preferences) kbCount += knowledgeBase.preferences.length;
+      if (knowledgeBase.student_profile) kbCount += knowledgeBase.student_profile.length;
+      if (knowledgeBase.knowledge_base) kbCount += knowledgeBase.knowledge_base.length;
+      kStatus.textContent = 'Base de conhecimento ativa com ' + kbCount + ' itens.';
+    } else if (hasLegacy) {
+      kStatus.textContent = knowledge.trim().length + ' caracteres de contexto adicional ativos.';
+    } else {
+      kStatus.textContent = 'Nenhuma instrução adicional ativa.';
+    }
   }
 
   /* ═══════════════════════════════════
@@ -235,9 +323,18 @@
      API — chamada com streaming SSE
   ═══════════════════════════════════ */
   function callStream(messages, onDelta) {
-    var sysContent = knowledge.trim()
-      ? SYSTEM + '\n\n---\n\nCONTEXTO E INSTRUÇÕES ADICIONAIS:\n' + knowledge.trim()
-      : SYSTEM;
+    // Construir prompt do sistema com base de conhecimento + contexto legado
+    var sysContent = SYSTEM;
+    
+    // Adicionar base de conhecimento se disponível
+    if (knowledgeBase) {
+      sysContent = buildSystemPromptFromKnowledge(knowledgeBase);
+    }
+    
+    // Adicionar contexto legado se existir
+    if (knowledge.trim()) {
+      sysContent += '\n\n--- CONTEXTO E INSTRUÇÕES ADICIONAIS ---\n' + knowledge.trim();
+    }
 
     var payload = JSON.stringify({
       model: model,
