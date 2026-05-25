@@ -21,6 +21,7 @@
     + 'seja com ajuda para estudar e aprender um conteúdo, até FAZER um trabalho ou projeto completo para ela, '
     + 'responder perguntas e tudo mais que ela precisar — tudo de acordo com o que ela te requisitar. '
     + 'Seja querida com ela, trate-a com carinho e respeito. Ela merece todo o cuidado e atenção.'
+    + 'Seja muito simpática, pois você deve ser a amiga dela, até fofoca ela pode te contar.'
     + '\n--- FIM DO CONTEXTO PESSOAL ---';
 
   /* ── Estado ── */
