@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+  <title>Gerenciador de Base de Conhecimento - AURORA</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:     #0c0b09; --s1: #161410; --s2: #1e1c18; --s3: #27231c;
+      --bdr:    rgba(230,195,110,0.08); --bdr-h: rgba(230,195,110,0.18);
+      --acc:    #d4a64a; --acc-dim: rgba(212,166,74,0.13);
+      --text:   #ece5d6; --muted: #6b6356; --subtle: #3a362e; --danger: #d46a6a;
+      --font:   'Sora', sans-serif;
+      --r: 10px; --r-lg: 16px; --r-xl: 22px; --r-pill: 999px;
+    }
+
+    html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--font); font-size: 15px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+
+    .container { max-width: 1000px; margin: 0 auto; padding: 20px; }
+
+    /* ── Header ── */
+    .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 30px; }
+    .header h1 { font-size: 24px; letter-spacing: -.01em; }
+    .header-sub { font-size: 13px; color: var(--muted); margin-top: 4px; }
+    .header-actions { display: flex; gap: 10px; }
+
+    /* ── Button styles ── */
+    .btn { padding: 8px 18px; border-radius: var(--r-lg); font-family: var(--font); font-size: 13px; font-weight: 500; cursor: pointer; transition: all .15s; border: 1px solid transparent; }
+    .btn-acc { background: var(--acc); color: #0c0b09; }
+    .btn-acc:hover { background: #e0b55c; }
+    .btn-ghost { background: transparent; border-color: var(--bdr); color: var(--muted); }
+    .btn-ghost:hover { background: var(--s2); color: var(--text); }
+    .btn-danger { background: transparent; border-color: rgba(212,106,106,.3); color: #e08888; }
+    .btn-danger:hover { background: rgba(212,106,106,.1); }
+    .btn-sm { padding: 5px 11px; font-size: 12px; }
+
+    /* ── Section ── */
+    .section { background: var(--s1); border: 1px solid var(--bdr); border-radius: var(--r-xl); overflow: hidden; margin-bottom: 24px; }
+    .section-header { padding: 18px 22px; border-bottom: 1px solid var(--bdr); display: flex; align-items: center; justify-content: space-between; }
+    .section-title { font-size: 15px; font-weight: 600; }
+    .section-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .section-body { padding: 20px 22px; }
+
+    /* ── Item ── */
+    .item { background: var(--s2); border: 1px solid var(--bdr); border-radius: var(--r-lg); padding: 16px; margin-bottom: 12px; display: flex; gap: 12px; align-items: flex-start; transition: all .2s; }
+    .item:last-child { margin-bottom: 0; }
+    .item:hover { background: #212015; border-color: rgba(212,166,74,.15); }
+    .item.locked { opacity: .7; }
+
+    .item-icon { width: 36px; height: 36px; min-width: 36px; display: flex; align-items: center; justify-content: center; border-radius: var(--r-lg); background: var(--acc-dim); color: var(--acc); font-size: 16px; }
+
+    .item-content { flex: 1; }
+    .item-title { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+    .item-desc { font-size: 13px; color: var(--muted); line-height: 1.5; margin-bottom: 8px; }
+    .item-meta { display: flex; gap: 16px; font-size: 11px; color: var(--subtle); }
+    .item-meta-item { display: flex; align-items: center; gap: 4px; }
+    .badge-lock { display: inline-block; background: rgba(212,106,106,.15); color: #e08888; padding: 2px 8px; border-radius: 12px; font-size: 11px; }
+    .badge-cat { display: inline-block; background: var(--acc-dim); color: var(--acc); padding: 2px 8px; border-radius: 12px; font-size: 11px; }
+
+    .item-actions { display: flex; gap: 6px; }
+
+    /* ── Form ── */
+    .form-group { margin-bottom: 18px; }
+    .form-group:last-child { margin-bottom: 0; }
+    .form-label { display: block; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .07em; font-weight: 600; margin-bottom: 6px; }
+    .form-input, .form-textarea, .form-select {
+      width: 100%; background: var(--s2); border: 1px solid var(--bdr); border-radius: var(--r-lg);
+      color: var(--text); font-family: var(--font); font-size: 13px; padding: 10px 13px;
+      outline: none; transition: border-color .2s;
+    }
+    .form-input:focus, .form-textarea:focus, .form-select:focus { border-color: rgba(212,166,74,.4); }
+    .form-textarea { resize: vertical; min-height: 100px; line-height: 1.5; }
+    .form-select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b6356' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 13px center; padding-right: 36px; }
+
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+    /* ── Modal ── */
+    .overlay { position: fixed; inset: 0; background: rgba(0,0,0,.72); backdrop-filter: blur(7px); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 20px; opacity: 0; pointer-events: none; transition: opacity .2s; }
+    .overlay.open { opacity: 1; pointer-events: auto; }
+
+    .modal { background: var(--s1); border: 1px solid var(--bdr-h); border-radius: var(--r-xl); overflow: hidden; width: 100%; max-width: 600px; box-shadow: 0 20px 60px rgba(0,0,0,.5); transform: translateY(12px) scale(.98); transition: transform .22s; max-height: 90vh; overflow-y: auto; }
+    .overlay.open .modal { transform: none; }
+
+    .modal-header { padding: 24px; border-bottom: 1px solid var(--bdr); background: var(--s2); }
+    .modal-title { font-size: 18px; font-weight: 600; margin-bottom: 4px; }
+    .modal-sub { font-size: 13px; color: var(--muted); }
+
+    .modal-body { padding: 24px; }
+
+    .modal-footer { display: flex; gap: 10px; justify-content: flex-end; padding: 16px 24px; border-top: 1px solid var(--bdr); background: var(--s2); }
+
+    /* ── Tabs ── */
+    .tabs { display: flex; border-bottom: 1px solid var(--bdr); margin-bottom: 24px; gap: 0; }
+    .tab-btn { padding: 12px 16px; border: none; background: none; cursor: pointer; color: var(--muted); font-family: var(--font); font-weight: 500; font-size: 13px; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all .15s; }
+    .tab-btn.active { color: var(--acc); border-bottom-color: var(--acc); }
+    .tab-pane { display: none; }
+    .tab-pane.active { display: block; }
+
+    /* ── Toast ── */
+    .toast { position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%) translateY(14px); background: var(--s2); border: 1px solid var(--bdr-h); border-radius: var(--r-pill); padding: 11px 22px; font-size: 13px; color: var(--text); opacity: 0; transition: all .25s; pointer-events: none; z-index: 200; box-shadow: 0 4px 20px rgba(0,0,0,.4); }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ── Empty state ── */
+    .empty-state { text-align: center; padding: 40px 20px; color: var(--muted); }
+    .empty-icon { font-size: 32px; margin-bottom: 12px; opacity: .3; }
+    .empty-text { font-size: 14px; margin-bottom: 4px; }
+    .empty-sub { font-size: 12px; opacity: .7; }
+
+    /* ── Responsive ── */
+    @media (max-width: 700px) {
+      .container { padding: 14px; }
+      .form-row { grid-template-columns: 1fr; }
+      .header { flex-direction: column; gap: 16px; align-items: flex-start; }
+      .header-actions { width: 100%; }
+      .header-actions .btn { flex: 1; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <div>
+      <h1>⚖︎ Gerenciador de Base de Conhecimento</h1>
+      <p class="header-sub">Organize e personalize o contexto da AURORA</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-acc" id="addItemBtn">+ Adicionar Item</button>
+      <button class="btn btn-ghost" id="backBtn">← Voltar</button>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="instructions">Instruções</button>
+    <button class="tab-btn" data-tab="preferences">Preferências</button>
+    <button class="tab-btn" data-tab="profile">Perfil</button>
+    <button class="tab-btn" data-tab="knowledge">Base de Conhecimento</button>
+  </div>
+
+  <!-- Tab: Instruções -->
+  <div class="tab-pane active" id="tab-instructions">
+    <div class="section">
+      <div class="section-header">
+        <div>
+          <div class="section-title">Instruções do Sistema</div>
+          <div class="section-sub">Diretrizes principais para a AURORA</div>
+        </div>
+      </div>
+      <div class="section-body" id="instructionsList"></div>
+    </div>
+  </div>
+
+  <!-- Tab: Preferências -->
+  <div class="tab-pane" id="tab-preferences">
+    <div class="section">
+      <div class="section-header">
+        <div>
+          <div class="section-title">Preferências</div>
+          <div class="section-sub">Customize o comportamento da assistente</div>
+        </div>
+      </div>
+      <div class="section-body" id="preferencesList"></div>
+    </div>
+  </div>
+
+  <!-- Tab: Perfil -->
+  <div class="tab-pane" id="tab-profile">
+    <div class="section">
+      <div class="section-header">
+        <div>
+          <div class="section-title">Perfil do Usuário</div>
+          <div class="section-sub">Informações sobre você para personalização</div>
+        </div>
+      </div>
+      <div class="section-body" id="profileList"></div>
+    </div>
+  </div>
+
+  <!-- Tab: Base de Conhecimento -->
+  <div class="tab-pane" id="tab-knowledge">
+    <div class="section">
+      <div class="section-header">
+        <div>
+          <div class="section-title">Base de Conhecimento</div>
+          <div class="section-sub">Áreas de especialização e tipos de trabalhos</div>
+        </div>
+      </div>
+      <div class="section-body" id="knowledgeList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de Edição/Criação -->
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modalTitle">Adicionar Item</div>
+      <div class="modal-sub" id="modalSub">Preencha os campos abaixo</div>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Título</label>
+        <input type="text" class="form-input" id="itemTitle" placeholder="Ex: Citações Legais">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Descrição/Conteúdo</label>
+        <textarea class="form-textarea" id="itemContent" placeholder="Ex: Sempre cite artigos do CPC, CC, CP..."></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Categoria</label>
+          <select class="form-select" id="itemCategory">
+            <option value="">Selecione...</option>
+            <option value="expertise">Expertise</option>
+            <option value="format">Formato</option>
+            <option value="capabilities">Capacidades</option>
+            <option value="personality">Personalidade</option>
+            <option value="citations">Citações</option>
+            <option value="language">Linguagem</option>
+            <option value="academic_format">Formato Acadêmico</option>
+            <option value="other">Outro</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Prioridade</label>
+          <select class="form-select" id="itemPriority">
+            <option value="low">Baixa</option>
+            <option value="medium" selected>Média</option>
+            <option value="high">Alta</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="closeModalBtn">Cancelar</button>
+      <button class="btn btn-acc" id="saveItemBtn">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="knowledge-manager.js"></script>
+</body>
+</html>
